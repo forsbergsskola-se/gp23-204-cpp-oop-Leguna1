@@ -1,164 +1,228 @@
 #pragma once
-#include <stdexcept>
 #include <iostream>
+#include <stdexcept>
+#include <cstring>
+
+using namespace std;
 
 class String {
-private:
-    char* buffer;
-    size_t length;
-    size_t maxSize;
-
 public:
-    String() : buffer(nullptr), length(0), maxSize(0) {}
+    int maxSize;
+    int length;
+    char* buffer;
 
-    String(const char* text) : buffer(nullptr), length(0), maxSize(0) {
-        if (text == nullptr)
-            throw std::invalid_argument("Null pointer passed to String constructor");
-
-        length = customStrlen(text);
-        maxSize = length + 1;
-        buffer = new char[maxSize];
-        customStrcpy(buffer, text);
+    String(int maxSize) : maxSize(maxSize), length(0), buffer(new char[maxSize + 1]) {
+        cout << "Empty buffer gets constructed" << endl;
+        buffer[0] = '\0';
     }
 
-    ~String() { delete[] buffer; }
+    String(const char* defaultText, int maxSize) : maxSize(maxSize), length(0), buffer(new char[maxSize + 1]) {
+        cout << "Non-Empty string gets constructed" << endl;
+        length = customStrlen(defaultText);
+        for (int i = 0; i < length; i++) {
+            buffer[i] = defaultText[i];
+        }
+        buffer[length] = '\0';
+    }
+
+    ~String() {
+        cout << "String gets destructed" << endl;
+        delete[] buffer;
+    }
 
     void append(const char* text) {
-        if (text == nullptr)
-            throw std::invalid_argument("Null pointer passed to append");
+        int newLength = customStrlen(text);
+        if (length + newLength >= maxSize) {
+            throw runtime_error("Appended text exceeds buffer size");
+        }
 
-        size_t newTextLength = customStrlen(text);
-        if (length + newTextLength >= maxSize)
-            resizeBuffer(length + newTextLength + 1);
-
-        customStrcat(buffer, text);
-        length += newTextLength;
+        for (int i = 0; i < newLength; ++i) {
+            buffer[length + i] = text[i];
+        }
+        length += newLength;
+        buffer[length] = '\0';
     }
 
     void appendLine(const char* text) {
-        append(text);
-        append("\n");
-    }
-
-    void print() const { std::cout << buffer; }
-
-    const char* getString() const { return buffer; }
-
-    bool operator==(const String& other) const {
-        return customStrcmp(buffer, other.buffer) == 0;
-    }
-
-    int indexOf(const char* substring) const {
-        if (substring == nullptr)
-            throw std::invalid_argument("Null pointer passed to indexOf");
-
-        char* found = customStrstr(buffer, substring);
-        return found != nullptr ? found - buffer : -1;
-    }
-
-    void replace(const char* oldSubstring, const char* newSubstring) {
-        if (oldSubstring == nullptr || newSubstring == nullptr)
-            throw std::invalid_argument("Null pointer passed to replace");
-
-        int pos = indexOf(oldSubstring);
-        if (pos != -1) {
-            size_t oldLen = customStrlen(oldSubstring);
-            size_t newLen = customStrlen(newSubstring);
-
-            if (newLen > oldLen)
-                resizeBuffer(length + newLen - oldLen);
-
-            char* startPos = buffer + pos;
-            char* endPos = startPos + oldLen;
-            size_t moveSize = customStrlen(endPos) + 1;
-
-            customMemmove(startPos + newLen, endPos, moveSize);
-            customMemcpy(startPos, newSubstring, newLen);
-            length = length + newLen - oldLen;
+        if (length + customStrlen(text) + 1 >= maxSize) {
+            throw runtime_error("The text is greater than buffer size");
         }
+        append(text);
+
+        buffer[length++] = '\n';
+        buffer[length] = '\0';
     }
 
+    void print() const {
+        cout << buffer;
+    }
+
+    const char* getString()
+    {
+        return buffer;
+    }
+
+    String(const String& other) : maxSize(other.maxSize), length(other.length), buffer(new char[other.maxSize + 1]) {
+        cout << "String copy constructor" << endl;
+        memcpy(buffer, other.buffer, length + 1);
+    }
+
+    String& operator =(const String& other) {
+        if (this != &other) {
+            delete[] buffer;
+            maxSize = other.maxSize;
+            length = other.length;
+            buffer = new char[maxSize + 1];
+            memcpy(buffer, other.buffer, length + 1);
+        }
+        return *this;
+    }
+
+    String(String&& other) noexcept : maxSize(other.maxSize), length(other.length), buffer(other.buffer) {
+        cout << "String move constructor" << endl;
+        other.maxSize = 0;
+        other.length = 0;
+        other.buffer = nullptr;
+    }
+
+    String& operator=(String&& other) noexcept {
+        if (this != &other) {
+            delete[] buffer;
+            maxSize = other.maxSize;
+            length = other.length;
+            buffer = other.buffer;
+            other.maxSize = 0;
+            other.length = 0;
+            other.buffer = nullptr;
+        }
+        return *this;
+    }
+    String operator+(const String& other)
+    {
+        const size_t newLength = length + other.length;
+        if (newLength > maxSize)
+        {
+            throw runtime_error("Combined strings exceed buffer size");
+        }
+        String result(*this);
+        memcpy(result.buffer + length, other.buffer, other.length + 1);
+        result.length = newLength;
+        return result;
+    }
+    String& operator+=(const String& other) {
+        const size_t new_length = length + other.length;
+        if (new_length >= maxSize) {
+            throw runtime_error("Strings exceeds buffer size");
+        }
+        memcpy(buffer + length, other.buffer, other.length + 1);
+        length = new_length;
+        return *this;
+
+    }
+
+    char& operator[] (const size_t& pos)
+    {
+        if (pos >= length) {
+            throw out_of_range("Index out of range");
+        }
+        return buffer[pos];
+    }
+
+    friend ostream& operator<<(ostream& os, const String& text) {
+        for (size_t i = 0; i < text.length; ++i) {
+            os << text.buffer[i];
+        }
+        return os;
+    }
+    bool operator==(const String& other)
+    {
+        if (length == 0 && other.length == 0)
+        {
+            return false;
+        }
+
+        if (length != other.length)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < length - 1; i++)
+        {
+            if (buffer[i] != other.buffer[i])
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    bool operator!=(const String& other)
+    {
+        if (length == 0 && other.length == 0)
+        {
+            return true;
+        }
+
+        if (length != other.length)
+        {
+            return true;
+        }
+
+        for (int i = 0; i < length - 1; i++)
+        {
+            if (buffer[i] != other.buffer[i])
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+    bool operator<(const String& other) const {
+        int len = customMinOrMax(*this, other);
+
+        for (int i = 0; i < len; ++i) {
+            if (buffer[i] < other.buffer[i]) {
+                return true;
+            }
+            else if (buffer[i] > other.buffer[i]) {
+                return false;
+            }
+        }
+
+        return length < other.length;
+    }
+
+    bool operator>(const String& other) const {
+        int len = customMinOrMax(*this, other);
+
+        for (int i = 0; i < len; ++i) {
+            if (buffer[i] > other.buffer[i]) {
+                return true;
+            }
+            else if (buffer[i] < other.buffer[i]) {
+                return false;
+            }
+        }
+
+        return length > other.length;
+    }
 private:
-    size_t customStrlen(const char* str) const {
-        size_t len = 0;
+    int customStrlen(const char* str) const {
+        int len = 0;
         while (str[len] != '\0') {
             len++;
         }
         return len;
     }
-
-    void customStrcpy(char* dest, const char* src) {
-        while (*src != '\0') {
-            *dest++ = *src++;
+    static int customMinOrMax(const String& a, const String& b)
+    {
+        if (a.length < b.length) {
+            return a.length;
         }
-        *dest = '\0';
-    }
-
-    void customStrcat(char* dest, const char* src) {
-        while (*dest != '\0') {
-            dest++;
+        else {
+            return b.length;
         }
-        while (*src != '\0') {
-            *dest++ = *src++;
-        }
-        *dest = '\0';
-    }
-
-    int customStrcmp(const char* str1, const char* str2) const {
-        while (*str1 == *str2) {
-            if (*str1 == '\0') {
-                return 0;
-            }
-            str1++;
-            str2++;
-        }
-        return *str1 - *str2;
-    }
-
-    char* customStrstr(const char* str, const char* substr) const {
-        while (*str != '\0') {
-            const char* strStart = str;
-            const char* subStart = substr;
-            while (*str != '\0' && *substr != '\0' && *str == *substr) {
-                str++;
-                substr++;
-            }
-            if (*substr == '\0') {
-                return const_cast<char*>(strStart);
-            }
-            str = strStart + 1;
-            substr = subStart;
-        }
-        return nullptr;
-    }
-
-    void customMemmove(char* dest, const char* src, size_t n) {
-        if (dest < src) {
-            while (n--) {
-                *dest++ = *src++;
-            }
-        }
-        else if (dest > src) {
-            dest += n;
-            src += n;
-            while (n--) {
-                *--dest = *--src;
-            }
-        }
-    }
-
-    void customMemcpy(char* dest, const char* src, size_t n) {
-        while (n--) {
-            *dest++ = *src++;
-        }
-    }
-
-    void resizeBuffer(size_t newSize) {
-        maxSize = newSize;
-        char* newBuffer = new char[maxSize];
-        customMemcpy(newBuffer, buffer, length + 1);
-        delete[] buffer;
-        buffer = newBuffer;
     }
 };
-
