@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
-#include "String.h"
+#include "../gp23-204-cpp-oop/String.h"
+
 
 
 TEST(String, DefaultConstructor)
@@ -160,7 +161,7 @@ TEST(String, EqualityOperator)
 	EXPECT_FALSE(String("Hello", 15) == String("Helloa", 17));
 	EXPECT_FALSE(String("Hello", 15) == String("Hallo", 17));
 	EXPECT_FALSE(String("Hello", 15) == String("", 17));
-	EXPECT_FALSE(String("", 15) == String("", 17));
+	EXPECT_TRUE(String("", 15) == String("", 17));
 }
 TEST(String, InequalityOperator)
 {
@@ -168,7 +169,7 @@ TEST(String, InequalityOperator)
 	EXPECT_TRUE(String("Hello", 15) != String("Helloa", 17));
 	EXPECT_TRUE(String("Hello", 15) != String("Hallo", 17));
 	EXPECT_TRUE(String("Hello", 15) != String("", 17));
-	EXPECT_TRUE(String("", 15) != String("", 17));
+	EXPECT_FALSE(String("", 15) != String("", 17));
 }
 TEST(String, LessThanOperator)
 {

@@ -134,19 +134,18 @@ public:
         }
         return os;
     }
+
     bool operator==(const String& other)
     {
-        if (length == 0 && other.length == 0)
-        {
-            return false;
+        if (length == 0 && other.length == 0) {
+            return true; 
         }
-
         if (length != other.length)
         {
             return false;
         }
 
-        for (int i = 0; i < length - 1; i++)
+        for (int i = 0; i < length; i++)
         {
             if (buffer[i] != other.buffer[i])
             {
@@ -159,9 +158,8 @@ public:
 
     bool operator!=(const String& other)
     {
-        if (length == 0 && other.length == 0)
-        {
-            return true;
+        if (length == 0 && other.length == 0) {
+            return false; 
         }
 
         if (length != other.length)
@@ -169,7 +167,7 @@ public:
             return true;
         }
 
-        for (int i = 0; i < length - 1; i++)
+        for (int i = 0; i < length; i++)
         {
             if (buffer[i] != other.buffer[i])
             {
@@ -179,6 +177,7 @@ public:
 
         return false;
     }
+
     bool operator<(const String& other) const {
         int len = customMinOrMax(*this, other);
 
